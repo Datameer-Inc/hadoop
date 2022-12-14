@@ -99,7 +99,10 @@ public class S3AInstrumentation implements Closeable, MetricsSource {
   private static int metricsSourceNameCounter = 0;
   private static int metricsSourceActiveCounter = 0;
 
-  private String metricsSourceName;
+  /**
+   * Weak reference so there's no back reference to the instrumentation.
+   */
+  private WeakRefMetricsSource metricsSourceReference;
 
   private final MetricsRegistry registry =
       new MetricsRegistry("s3aFileSystem").setContext(CONTEXT);
@@ -245,19 +248,33 @@ public class S3AInstrumentation implements Closeable, MetricsSource {
     registerAsMetricsSource(name);
   }
 
+  /**
+   * Get the current metrics system; demand creating.
+   * @return a metric system, creating if need be.
+   */
   @VisibleForTesting
-  public MetricsSystem getMetricsSystem() {
+  static MetricsSystem getMetricsSystem() {
     synchronized (metricsSystemLock) {
       if (metricsSystem == null) {
         metricsSystem = new MetricsSystemImpl();
         metricsSystem.init(METRICS_SYSTEM_NAME);
+        LOG.debug("Metrics system inited {}", metricsSystem);
       }
     }
     return metricsSystem;
   }
 
   /**
-   * Register this instance as a metrics source.
+   * Does the instrumentation have a metrics system?
+   * @return true if the metrics system is present.
+   */
+  @VisibleForTesting
+  static boolean hasMetricSystem() {
+    return metricsSystem != null;
+  }
+
+  /**
+   * Register this instance as a metrics source via a weak reference.
    * @param name s3a:// URI for the associated FileSystem instance
    */
   private void registerAsMetricsSource(URI name) {
@@ -269,8 +286,9 @@ public class S3AInstrumentation implements Closeable, MetricsSource {
       number = ++metricsSourceNameCounter;
     }
     String msName = METRICS_SOURCE_BASENAME + number;
-    metricsSourceName = msName + "-" + name.getHost();
-    metricsSystem.register(metricsSourceName, "", this);
+    String metricsSourceName = msName + "-" + name.getHost();
+    metricsSourceReference = new WeakRefMetricsSource(metricsSourceName, this);
+    metricsSystem.register(metricsSourceName, "", metricsSourceReference);
   }
 
   /**
@@ -602,16 +620,39 @@ public class S3AInstrumentation implements Closeable, MetricsSource {
     registry.snapshot(collector.addRecord(registry.info().name()), true);
   }
 
+  /**
+   * if registered with the metrics, return the
+   * name of the source.
+   * @return the name of the metrics, or null if this instance is not bonded.
+   */
+  public String getMetricSourceName() {
+    return metricsSourceReference != null
+        ? metricsSourceReference.getName()
+        : null;
+  }
+
   public void close() {
-    synchronized (metricsSystemLock) {
-      putLatencyQuantile.stop();
-      throttleRateQuantile.stop();
-      metricsSystem.unregisterSource(metricsSourceName);
-      int activeSources = --metricsSourceActiveCounter;
-      if (activeSources == 0) {
-        metricsSystem.publishMetricsNow();
-        metricsSystem.shutdown();
-        metricsSystem = null;
+    if (metricsSourceReference != null) {
+      // get the name
+      String name = metricsSourceReference.getName();
+      LOG.debug("Unregistering metrics for {}", name);
+      // then set to null so a second close() is a noop here.
+      metricsSourceReference = null;
+      synchronized (metricsSystemLock) {
+        if (metricsSystem == null) {
+          LOG.debug("there is no metric system to unregister {} from", name);
+          return;
+        }
+        putLatencyQuantile.stop();
+        throttleRateQuantile.stop();
+
+        metricsSystem.unregisterSource(name);
+        int activeSources = --metricsSourceActiveCounter;
+        if (activeSources == 0) {
+          metricsSystem.publishMetricsNow();
+          metricsSystem.shutdown();
+          metricsSystem = null;
+        }
       }
     }
   }
