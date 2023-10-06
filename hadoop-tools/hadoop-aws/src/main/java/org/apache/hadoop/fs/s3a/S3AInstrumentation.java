@@ -197,7 +197,7 @@ public class S3AInstrumentation implements Closeable, MetricsSource {
       STREAM_WRITE_BLOCK_UPLOADS_DATA_PENDING,
   };
 
-  public S3AInstrumentation(URI name) {
+  public S3AInstrumentation(URI name, boolean metricsEnabled) {
     UUID fileSystemInstanceId = UUID.randomUUID();
     registry.tag(METRIC_TAG_FILESYSTEM_ID,
         "A unique identifier for the instance",
@@ -238,14 +238,20 @@ public class S3AInstrumentation implements Closeable, MetricsSource {
     for (Statistic statistic : GAUGES_TO_CREATE) {
       gauge(statistic.getSymbol(), statistic.getDescription());
     }
-    //todo need a config for the quantiles interval?
-    int interval = 1;
-    putLatencyQuantile = quantiles(S3GUARD_METADATASTORE_PUT_PATH_LATENCY,
-        "ops", "latency", interval);
-    throttleRateQuantile = quantiles(S3GUARD_METADATASTORE_THROTTLE_RATE,
-        "events", "frequency (Hz)", interval);
 
-    registerAsMetricsSource(name);
+    if (metricsEnabled) {
+      //todo need a config for the quantiles interval?
+      int interval = 1;
+      putLatencyQuantile = quantiles(S3GUARD_METADATASTORE_PUT_PATH_LATENCY,
+          "ops", "latency", interval);
+      throttleRateQuantile = quantiles(S3GUARD_METADATASTORE_THROTTLE_RATE,
+          "events", "frequency (Hz)", interval);
+
+      registerAsMetricsSource(name);
+    } else {
+      putLatencyQuantile = null;
+      throttleRateQuantile = null;
+    }
   }
 
   /**
