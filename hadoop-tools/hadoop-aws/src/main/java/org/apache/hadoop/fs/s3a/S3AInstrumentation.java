@@ -183,7 +183,7 @@ public class S3AInstrumentation implements Closeable, MetricsSource,
    * Construct the instrumentation for a filesystem.
    * @param name URI of filesystem.
    */
-  public S3AInstrumentation(URI name) {
+  public S3AInstrumentation(URI name, boolean metricsEnabled) {
     UUID fileSystemInstanceId = UUID.randomUUID();
     registry.tag(METRIC_TAG_FILESYSTEM_ID,
         "A unique identifier for the instance",
@@ -222,11 +222,16 @@ public class S3AInstrumentation implements Closeable, MetricsSource,
 
     //todo need a config for the quantiles interval?
     int interval = 1;
-    throttleRateQuantile = quantiles(STORE_IO_THROTTLE_RATE,
-        "events", "frequency (Hz)", interval);
 
-    // register with Hadoop metrics
-    registerAsMetricsSource(name);
+    if (metricsEnabled) {
+      throttleRateQuantile = quantiles(STORE_IO_THROTTLE_RATE,
+          "events", "frequency (Hz)", interval);
+
+      // register with Hadoop metrics
+      registerAsMetricsSource(name);
+    } else {
+      throttleRateQuantile = null;
+    }
 
     // and build the IO Statistics
     instanceIOStatistics = storeBuilder.build();
