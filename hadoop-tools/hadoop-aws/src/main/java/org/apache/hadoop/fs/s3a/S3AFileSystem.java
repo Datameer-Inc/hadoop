@@ -245,7 +245,7 @@ public class S3AFileSystem extends FileSystem implements StreamCapabilities {
     super.initialize(name, conf);
     setConf(conf);
     try {
-      instrumentation = new S3AInstrumentation(name);
+      instrumentation = new S3AInstrumentation(name, false);
 
       // Username is the current user at the time the FS was instantiated.
       username = UserGroupInformation.getCurrentUser().getShortUserName();

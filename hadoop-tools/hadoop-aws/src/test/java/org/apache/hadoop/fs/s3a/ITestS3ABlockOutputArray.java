@@ -128,7 +128,7 @@ public class ITestS3ABlockOutputArray extends AbstractS3ATestBase {
   private void markAndResetDatablock(S3ADataBlocks.BlockFactory factory)
       throws Exception {
     S3AInstrumentation instrumentation =
-        new S3AInstrumentation(new URI("s3a://example"));
+        new S3AInstrumentation(new URI("s3a://example"), true);
     S3AInstrumentation.OutputStreamStatistics outstats
         = instrumentation.newOutputStreamStatistics(null);
     S3ADataBlocks.DataBlock block = factory.create(1, BLOCK_SIZE, outstats);

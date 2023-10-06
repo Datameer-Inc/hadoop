@@ -77,7 +77,7 @@ public class MockS3AFileSystem extends S3AFileSystem {
    */
   private int logEvents = LOG_NAME;
   private final S3AInstrumentation instrumentation =
-      new S3AInstrumentation(FS_URI);
+      new S3AInstrumentation(FS_URI, true);
   private Configuration conf;
   private WriteOperationHelper writeHelper;
 
