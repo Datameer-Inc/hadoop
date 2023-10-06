@@ -185,7 +185,7 @@ public class S3AInstrumentation implements Closeable, MetricsSource,
    * Construct the instrumentation for a filesystem.
    * @param name URI of filesystem.
    */
-  public S3AInstrumentation(URI name) {
+  public S3AInstrumentation(URI name, boolean metricsEnabled) {
     UUID fileSystemInstanceId = UUID.randomUUID();
     registry.tag(METRIC_TAG_FILESYSTEM_ID,
         "A unique identifier for the instance",
@@ -224,15 +224,21 @@ public class S3AInstrumentation implements Closeable, MetricsSource,
 
     //todo need a config for the quantiles interval?
     int interval = 1;
-    putLatencyQuantile = quantiles(S3GUARD_METADATASTORE_PUT_PATH_LATENCY,
-        "ops", "latency", interval);
-    s3GuardThrottleRateQuantile = quantiles(S3GUARD_METADATASTORE_THROTTLE_RATE,
-        "events", "frequency (Hz)", interval);
-    throttleRateQuantile = quantiles(STORE_IO_THROTTLE_RATE,
-        "events", "frequency (Hz)", interval);
+    if (metricsEnabled) {
+      putLatencyQuantile = quantiles(S3GUARD_METADATASTORE_PUT_PATH_LATENCY,
+          "ops", "latency", interval);
+      s3GuardThrottleRateQuantile = quantiles(S3GUARD_METADATASTORE_THROTTLE_RATE,
+          "events", "frequency (Hz)", interval);
+      throttleRateQuantile = quantiles(STORE_IO_THROTTLE_RATE,
+          "events", "frequency (Hz)", interval);
 
-    // register with Hadoop metrics
-    registerAsMetricsSource(name);
+      // register with Hadoop metrics
+      registerAsMetricsSource(name);
+    } else {
+      putLatencyQuantile = null;
+      s3GuardThrottleRateQuantile = null;
+      throttleRateQuantile = null;
+    }
 
     // and build the IO Statistics
     instanceIOStatistics = storeBuilder.build();

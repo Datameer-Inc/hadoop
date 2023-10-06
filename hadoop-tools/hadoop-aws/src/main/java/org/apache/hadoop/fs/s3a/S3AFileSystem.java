@@ -463,7 +463,7 @@ public class S3AFileSystem extends FileSystem implements StreamCapabilities,
           buildEncryptionSecrets(bucket, conf));
 
       invoker = new Invoker(new S3ARetryPolicy(getConf()), onRetry);
-      instrumentation = new S3AInstrumentation(uri);
+      instrumentation = new S3AInstrumentation(uri, false);
       initializeStatisticsBinding();
       // If CSE-KMS method is set then CSE is enabled.
       isCSEEnabled = S3AEncryptionMethods.CSE_KMS.getMethod()
