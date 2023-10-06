@@ -41,7 +41,7 @@ public class TestInstrumentationLifecycle extends AbstractHadoopTestBase {
 
   @Test
   public void testDoubleClose() throws Throwable {
-    S3AInstrumentation instrumentation = new S3AInstrumentation(new URI("s3a://example/"));
+    S3AInstrumentation instrumentation = new S3AInstrumentation(new URI("s3a://example/"), true);
 
     // the metric system is created in the constructor
     assertThat(S3AInstrumentation.hasMetricSystem())

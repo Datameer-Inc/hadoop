@@ -630,7 +630,7 @@ public class S3AFileSystem extends FileSystem implements StreamCapabilities,
 
       // initialize statistics, after which statistics
       // can be collected.
-      instrumentation = new S3AInstrumentation(uri);
+      instrumentation = new S3AInstrumentation(uri, false);
       initializeStatisticsBinding();
 
       // track initialization duration.
