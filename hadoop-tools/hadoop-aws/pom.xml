@@ -23,7 +23,7 @@
     <relativePath>../../hadoop-project</relativePath>
   </parent>
   <artifactId>hadoop-aws</artifactId>
-  <version>3.3.3</version>
+  <version>3.3.3-datameer-20250814</version>
   <name>Apache Hadoop Amazon Web Services support</name>
   <description>
     This module contains code to support integration with Amazon Web Services.
